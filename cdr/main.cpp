@@ -1,21 +1,26 @@
 #include <iostream>
+#include <string>
 #include "CDRProcessor.h"
 
 int main() {
     CDRProcessor processor;
 
-    processor.addRecord(CallRecord(1, "03001234567", "03111234567", "VOICE", 120, 0, "2026-11-22 10:00:00"));
-    processor.addRecord(CallRecord(2, "03001234567", "03111234567", "SMS", 0, 0, "2026-11-22 10:05:00"));
-    processor.addRecord(CallRecord(3, "03001234567", "", "DATA", 0, 250.5, "2026-11-22 11:00:00"));
-    processor.addRecord(CallRecord(3, "03001234567", "", "DATA", 0, 99, "2026-11-22 12:00:00")); // duplicate ID, rejected
-    processor.addRecord(CallRecord(4, "03001234567", "03221234567", "FAX", 10, 0, "2026-11-22 12:00:00")); // invalid type, rejected
+    int loaded = processor.loadFromCSV("sample_cdr.csv");
+    if (loaded < 0) {
+        std::cout << "Could not open sample_cdr.csv. Run this program from inside the cdr folder.\n";
+        return 1;
+    }
 
     processor.printAll();
+    std::cout << "\nLoaded: " << loaded
+              << " | Rejected: " << processor.getRejectedCount() << "\n\n";
 
-    std::cout << "\nAccepted: " << processor.getRecordCount()
-              << " | Rejected: " << processor.getRejectedCount() << "\n";
-    std::cout << "Voice seconds: " << processor.getTotalVoiceSecondsFor("03001234567") << "\n";
-    std::cout << "Data MB: " << processor.getTotalDataMBFor("03001234567") << "\n";
-    std::cout << "SMS count: " << processor.getSmsCountFor("03001234567") << "\n";
+    const std::string numbers[2] = {"03001234567", "03331234567"};
+    for (const std::string& n : numbers) {
+        std::cout << n
+                  << " -> Voice: " << processor.getTotalVoiceSecondsFor(n) << "s"
+                  << " | SMS: " << processor.getSmsCountFor(n)
+                  << " | Data: " << processor.getTotalDataMBFor(n) << " MB\n";
+    }
     return 0;
 }
