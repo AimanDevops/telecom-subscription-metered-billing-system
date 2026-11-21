@@ -11,8 +11,7 @@ int main() {
         return 1;
     }
 
-    processor.printAll();
-    std::cout << "\nLoaded: " << loaded
+    std::cout << "Loaded: " << loaded
               << " | Rejected: " << processor.getRejectedCount() << "\n\n";
 
     const std::string numbers[2] = {"03001234567", "03331234567"};
@@ -22,5 +21,8 @@ int main() {
                   << " | SMS: " << processor.getSmsCountFor(n)
                   << " | Data: " << processor.getTotalDataMBFor(n) << " MB\n";
     }
+
+    std::cout << "\nMonthly usage summary\n";
+    processor.printMonthlySummary();
     return 0;
 }

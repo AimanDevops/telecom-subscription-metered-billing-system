@@ -3,9 +3,24 @@
 
 #include <vector>
 #include <string>
+#include <map>
+#include <utility>
+#include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <sstream>
 #include "CallRecord.h"
+
+// Usage of one subscriber in one month
+struct MonthlyUsage {
+    std::string subscriber;
+    std::string month;        // "YYYY-MM"
+    int voiceSeconds;
+    int smsCount;
+    double dataMB;
+
+    MonthlyUsage() : voiceSeconds(0), smsCount(0), dataMB(0.0) {}
+};
 
 class CDRProcessor {
 private:
@@ -104,6 +119,46 @@ public:
             if (r.getCallerNumber() == number && r.getCallType() == "SMS") count++;
         }
         return count;
+    }
+
+    // Groups all records by subscriber and month (sorted by subscriber, then month)
+    std::vector<MonthlyUsage> getMonthlySummary() const {
+        std::map<std::pair<std::string, std::string>, MonthlyUsage> grouped;
+
+        for (const CallRecord& r : records) {
+            std::string month = r.getTimestamp().substr(0, 7);   // "YYYY-MM"
+            std::pair<std::string, std::string> key(r.getCallerNumber(), month);
+
+            MonthlyUsage& u = grouped[key];
+            u.subscriber = r.getCallerNumber();
+            u.month = month;
+
+            if (r.getCallType() == "VOICE")     u.voiceSeconds += r.getDurationSeconds();
+            else if (r.getCallType() == "SMS")  u.smsCount++;
+            else if (r.getCallType() == "DATA") u.dataMB += r.getDataUsedMB();
+        }
+
+        std::vector<MonthlyUsage> result;
+        for (const auto& entry : grouped) result.push_back(entry.second);
+        return result;
+    }
+
+    void printMonthlySummary() const {
+        std::vector<MonthlyUsage> summary = getMonthlySummary();
+
+        std::cout << std::left << std::setw(14) << "Subscriber"
+                  << std::setw(10) << "Month"
+                  << std::setw(14) << "Voice (min)"
+                  << std::setw(6) << "SMS"
+                  << "Data (MB)\n";
+
+        for (const MonthlyUsage& u : summary) {
+            std::cout << std::left << std::setw(14) << u.subscriber
+                      << std::setw(10) << u.month
+                      << std::setw(14) << (u.voiceSeconds / 60.0)
+                      << std::setw(6) << u.smsCount
+                      << u.dataMB << "\n";
+        }
     }
 
     void printAll() const {
